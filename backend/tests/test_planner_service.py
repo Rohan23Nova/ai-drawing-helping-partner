@@ -6,6 +6,9 @@ from backend.app.services.planner_service import (
     create_relationship_instruction,
     get_shape_relationship,
     get_step_category,
+    describe_confidence,
+    adjust_instruction_for_confidence,
+
 )
 
 

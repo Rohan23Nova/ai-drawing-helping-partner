@@ -42,6 +42,27 @@ def describe_size(size: dict) -> str:
         f"{width_description} in width "
         f"and {height_description}"
     )
+def create_plan_step(
+    step_number: int,
+    title: str,
+    instruction: str,
+    purpose: str,
+    confidence: float = 0.75,
+    difficulty: str = "beginner",
+) -> dict:
+
+    return {
+        "step": step_number,
+        "title": title,
+        "category": get_step_category(title),
+        "instruction": instruction,
+        "purpose": purpose,
+        "difficulty": difficulty,
+        "confidence": confidence,
+        "confidence_level": describe_confidence(
+            confidence
+        ),
+    }
 def create_shape_instruction(
     shape: dict,
 ) -> str:
@@ -200,15 +221,21 @@ def generate_drawing_plan(
 
     if shape_count > 1:
         steps.append(
-            {
-                "step": 3,
-                "title": "Add secondary forms",
-                "instruction": (
-                    f"Build the remaining "
-                    f"{shape_count - 1} detected "
-                    "forms around the main structure."
+            create_plan_step(
+                step_number=3,
+                title="Refine the main forms",
+                instruction=(
+                    "Check the major shapes and refine "
+                    "their outlines lightly. Compare their "
+                    "size, position, and proportions with "
+                    "the reference."
                 ),
-            }
+                purpose=(
+                    "Improve the accuracy of the major forms "
+                    "before adding smaller details."
+                ),
+                confidence=0.75,
+            )
         )
     relationships = shapes.get(
         "relationships",
@@ -241,11 +268,17 @@ def generate_drawing_plan(
         )
 
         steps.append(
-            {
-                "step": len(steps) + 1,
-                "title": "Check relative placement",
-                "instruction": instruction,
-            }
+            create_plan_step(
+                step_number=len(steps) + 1,
+                title="Check relative placement",
+                instruction=instruction,
+                purpose=(
+                    "Keep the major forms positioned "
+                    "correctly relative to one another."
+                ),
+                confidence=0.70,
+                difficulty="beginner",
+            )
         )
     # Step 4: Refine lines
     lines = analysis.get(
@@ -260,15 +293,21 @@ def generate_drawing_plan(
 
     if line_count > 0:
         steps.append(
-            {
-                "step": len(steps) + 1,
-                "title": "Refine important lines",
-                "instruction": (
+            create_plan_step(
+                step_number=len(steps) + 1,
+                title="Refine important lines",
+                instruction=(
                     f"Check the approximately "
                     f"{line_count} detected structural "
                     "lines and refine them lightly."
                 ),
-            }
+                purpose=(
+                    "Strengthen the structural lines that "
+                    "define the major forms."
+                ),
+                confidence=0.70,
+                difficulty="beginner",
+            )
         )
 
     # Final step
@@ -293,28 +332,7 @@ def generate_drawing_plan(
         "step_count": len(steps),
         "steps": steps,
     }
-def create_plan_step(
-    step_number: int,
-    title: str,
-    instruction: str,
-    purpose: str,
-    difficulty: str = "beginner",
-    confidence: float = 1.0,
-) -> dict:
 
-    return {
-        "step": step_number,
-        "title": title,
-        "category": get_step_category(title),
-        "instruction": instruction,
-        "purpose": purpose,
-        "difficulty": difficulty,
-        "confidence": confidence,
-        "confidence": confidence,
-        "confidence_level": describe_confidence(
-            confidence
-        ),
-    }
 def get_step_category(title: str) -> str:
     categories = {
         "Establish the composition": "placement",
@@ -323,6 +341,7 @@ def get_step_category(title: str) -> str:
         "Check relative placement": "relationship",
         "Refine important lines": "structure",
         "Refine the drawing": "refinement",
+        "Refine the main forms": "secondary_form",
     }
 
     return categories.get(

@@ -23,6 +23,9 @@ from backend.app.services.analysis_service import (
 from backend.app.services.planner_service import (
     generate_drawing_plan,
 )
+from backend.app.schemas.planner_schema import (
+    DrawingPlan,
+)
 app = FastAPI(
     title="AI Drawing Helping Partner",
     description="An AI-powered drawing assistance API.",
@@ -82,8 +85,12 @@ async def upload_image(file: UploadFile = File(...)):
     analysis = analyze_reference(
         processed["edges"]
     )
-    drawing_plan = generate_drawing_plan(
+    drawing_plan_data = generate_drawing_plan(
         analysis
+    )
+
+    drawing_plan = DrawingPlan.model_validate(
+        drawing_plan_data
     )
 
     edge_map_path = save_edge_map(
