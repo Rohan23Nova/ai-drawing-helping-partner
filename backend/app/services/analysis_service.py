@@ -536,3 +536,48 @@ def analyze_shape_relationships(
             )
 
     return relationships
+def analyze_reference(
+    edges: np.ndarray,
+) -> dict:
+
+    composition = analyze_composition(edges)
+
+    lines = analyze_lines(edges)
+
+    shapes = analyze_shapes(edges)
+
+    proportions = calculate_proportions(
+        shapes["shapes"]
+    )
+
+    return {
+        "composition": composition,
+        "lines": lines,
+        "shapes": shapes,
+        "proportions": proportions,
+    }
+def calculate_proportions(
+    shapes: list[dict],
+) -> dict:
+
+    if not shapes:
+        return {
+            "count": 0,
+            "largest_shape": None,
+        }
+
+    largest_shape = max(
+        shapes,
+        key=lambda shape: shape.get("area", 0),
+    )
+
+    return {
+        "count": len(shapes),
+        "largest_shape": {
+            "index": shapes.index(largest_shape),
+            "type": largest_shape["type"],
+            "width": largest_shape["size"]["width"],
+            "height": largest_shape["size"]["height"],
+            "aspect_ratio": largest_shape["aspect_ratio"],
+        },
+    }

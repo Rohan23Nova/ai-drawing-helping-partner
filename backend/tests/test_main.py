@@ -65,6 +65,10 @@ def test_upload_image():
 
     assert "composition" in data["analysis"]
     assert data["analysis"]["composition"] is not None
+    analysis = data["analysis"]
+
+    assert "proportions" in analysis
+    assert analysis["proportions"] is not None
 def test_get_original_image():
     image = np.zeros(
         (100, 100, 3),

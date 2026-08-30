@@ -25,6 +25,8 @@ from backend.app.services.analysis_service import (
     calculate_shape_metrics,
     analyze_shape_relationships,
     determine_spatial_relationship,
+    analyze_reference,
+    calculate_proportions,
 )
 
 def test_find_contours():
@@ -586,4 +588,77 @@ def test_analyze_shape_relationships():
 
     assert relationships[0]["relationship"] == "above"
     assert relationships[1]["relationship"] == "below"
-        
+
+def test_analyze_reference():
+
+    image = np.zeros(
+        (200, 300),
+        dtype=np.uint8,
+    )
+
+    cv2.rectangle(
+        image,
+        (50, 40),
+        (150, 140),
+        255,
+        -1,
+    )
+
+    result = analyze_reference(image)
+
+    assert "composition" in result
+    assert "lines" in result
+    assert "shapes" in result
+
+    assert isinstance(
+        result["composition"],
+        dict,
+    )
+
+    assert isinstance(
+        result["lines"],
+        dict,
+    )
+
+    assert isinstance(
+        result["shapes"],
+        dict,
+    )
+def test_calculate_proportions():
+
+    shapes = [
+        {
+            "type": "rectangle",
+            "area": 1000,
+            "size": {
+                "width": 0.4,
+                "height": 0.5,
+            },
+            "aspect_ratio": 0.8,
+        },
+        {
+            "type": "circle",
+            "area": 500,
+            "size": {
+                "width": 0.2,
+                "height": 0.2,
+            },
+            "aspect_ratio": 1.0,
+        },
+    ]
+
+    result = calculate_proportions(shapes)
+
+    assert result["count"] == 2
+
+    assert result["largest_shape"]["index"] == 0
+    assert result["largest_shape"]["type"] == "rectangle"
+
+    assert result["largest_shape"]["width"] == 0.4
+    assert result["largest_shape"]["height"] == 0.5
+def test_calculate_proportions_empty():
+
+    result = calculate_proportions([])
+
+    assert result["count"] == 0
+    assert result["largest_shape"] is None
