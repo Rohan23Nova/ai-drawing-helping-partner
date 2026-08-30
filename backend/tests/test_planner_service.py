@@ -5,6 +5,7 @@ from backend.app.services.planner_service import (
     describe_position,
     create_relationship_instruction,
     get_shape_relationship,
+    get_step_category,
 )
 
 
@@ -180,3 +181,39 @@ def test_plan_step_structure():
     assert "purpose" in step
     assert "difficulty" in step
     assert "confidence" in step
+
+def test_plan_step_category():
+
+    analysis = {
+        "shapes": {
+            "shape_count": 1,
+            "shapes": [],
+        },
+        "proportions": {},
+        "lines": {
+            "line_count": 0,
+        },
+    }
+
+    result = generate_drawing_plan(
+        analysis
+    )
+
+    first_step = result["steps"][0]
+
+    assert first_step["category"] == "placement"
+def test_get_step_category():
+
+    assert (
+        get_step_category(
+            "Block in the main form"
+        )
+        == "primary_form"
+    )
+
+    assert (
+        get_step_category(
+            "Refine the drawing"
+        )
+        == "refinement"
+    )

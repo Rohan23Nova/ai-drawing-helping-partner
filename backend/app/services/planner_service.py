@@ -292,8 +292,24 @@ def create_plan_step(
     return {
         "step": step_number,
         "title": title,
+        "category": get_step_category(title),
         "instruction": instruction,
         "purpose": purpose,
         "difficulty": difficulty,
         "confidence": confidence,
+        "confidence": confidence,
     }
+def get_step_category(title: str) -> str:
+    categories = {
+        "Establish the composition": "placement",
+        "Block in the main form": "primary_form",
+        "Add secondary forms": "secondary_form",
+        "Check relative placement": "relationship",
+        "Refine important lines": "structure",
+        "Refine the drawing": "refinement",
+    }
+
+    return categories.get(
+        title,
+        "general",
+    )
