@@ -155,12 +155,25 @@ def generate_drawing_plan(
             [],
         )
 
+        confidence = 0.75
+
         if largest_index < len(shape_list):
             main_shape = shape_list[largest_index]
+
+            confidence = main_shape.get(
+                "confidence",
+                0.75,
+            )
 
             instruction = create_shape_instruction(
                 main_shape
             )
+
+            instruction = adjust_instruction_for_confidence(
+                instruction,
+                confidence,
+            )
+
         else:
             instruction = (
                 f"Start with the main "
@@ -169,16 +182,16 @@ def generate_drawing_plan(
 
         steps.append(
             create_plan_step(
-            step_number=2,
-            title="Block in the main form",
-            instruction=instruction,
-            purpose=(
-                "Establish the primary structure "
-                "of the drawing."
-            ),
-            confidence=0.9,
+                step_number=2,
+                title="Block in the main form",
+                instruction=instruction,
+                purpose=(
+                    "Establish the primary structure "
+                    "of the drawing."
+                ),
+                confidence=confidence,
+            )
         )
-    )
     # Step 3: Add remaining shapes
     shape_count = shapes.get(
         "shape_count",
@@ -298,6 +311,9 @@ def create_plan_step(
         "difficulty": difficulty,
         "confidence": confidence,
         "confidence": confidence,
+        "confidence_level": describe_confidence(
+            confidence
+        ),
     }
 def get_step_category(title: str) -> str:
     categories = {
@@ -312,4 +328,34 @@ def get_step_category(title: str) -> str:
     return categories.get(
         title,
         "general",
+    )
+def describe_confidence(confidence: float) -> str:
+
+    if confidence >= 0.85:
+        return "high"
+
+    if confidence >= 0.60:
+        return "medium"
+
+    return "low"
+def adjust_instruction_for_confidence(
+    instruction: str,
+    confidence: float,
+) -> str:
+
+    if confidence >= 0.85:
+        return instruction
+
+    if confidence >= 0.60:
+        return (
+            instruction
+            + " Use this as a guide and compare "
+            "the placement with the reference."
+        )
+
+    return (
+        instruction
+        + " This detection is uncertain, so "
+        "verify the placement visually against "
+        "the reference before committing to the line."
     )
