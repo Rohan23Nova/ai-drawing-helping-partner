@@ -1,3 +1,4 @@
+from pathlib import Path
 import cv2
 import numpy as np
 
@@ -66,3 +67,23 @@ def preprocess_image(image: np.ndarray) -> dict:
         "blurred": blurred,
         "edges": edges,
     }
+def save_edge_map(
+    edges: np.ndarray,
+    output_path: str,
+) -> str:
+    path = Path(output_path)
+
+    path.parent.mkdir(
+        parents=True,
+        exist_ok=True,
+    )
+
+    success = cv2.imwrite(
+        str(path),
+        edges,
+    )
+
+    if not success:
+        raise ValueError("Unable to save edge map.")
+
+    return str(path)

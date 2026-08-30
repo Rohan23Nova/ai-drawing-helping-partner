@@ -6,8 +6,11 @@ from backend.app.services.preprocessing_service import (
     detect_edges,
     resize_image,
 )
-from backend.app.services.preprocessing_service import preprocess_image
-
+from backend.app.services.preprocessing_service import (
+    detect_edges,
+    preprocess_image,
+    save_edge_map,
+)
 def test_convert_to_grayscale():
     image = np.zeros((100, 200, 3), dtype=np.uint8)
 
@@ -62,3 +65,16 @@ def test_preprocess_image():
     assert result["grayscale"].ndim == 2
     assert result["blurred"].ndim == 2
     assert result["edges"].ndim == 2
+
+def test_save_edge_map(tmp_path):
+    image = np.zeros((100, 100), dtype=np.uint8)
+
+    output_path = tmp_path / "edge_map.png"
+
+    result = save_edge_map(
+        image,
+        str(output_path),
+    )
+
+    assert result == str(output_path)
+    assert output_path.exists()

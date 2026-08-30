@@ -7,6 +7,7 @@ from backend.app.services.image_service import (
 
 from backend.app.services.preprocessing_service import (
     preprocess_image,
+    save_edge_map,
 )
 
 app = FastAPI(
@@ -57,6 +58,11 @@ async def upload_image(file: UploadFile = File(...)):
 
     processed = preprocess_image(image)
 
+    edge_map_path = save_edge_map(
+        processed["edges"],
+        "data/processed/edge_map.png",
+    )
+
     height, width = processed["resized"].shape[:2]
 
     return {
@@ -68,5 +74,6 @@ async def upload_image(file: UploadFile = File(...)):
         "grayscale": True,
         "blurred": True,
         "edges_detected": True,
+        "edge_map_path": edge_map_path,
         "message": "Image uploaded and preprocessed successfully.",
     }
