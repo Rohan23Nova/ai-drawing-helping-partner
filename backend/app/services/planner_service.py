@@ -1,3 +1,70 @@
+def describe_position(center: dict) -> str:
+    x = center["x"]
+    y = center["y"]
+
+    if x < 0.33:
+        horizontal = "left"
+    elif x > 0.66:
+        horizontal = "right"
+    else:
+        horizontal = "center"
+
+    if y < 0.33:
+        vertical = "upper"
+    elif y > 0.66:
+        vertical = "lower"
+    else:
+        vertical = "middle"
+
+    if horizontal == "center" and vertical == "middle":
+        return "near the center"
+
+    return f"in the {vertical}-{horizontal} area"
+def describe_size(size: dict) -> str:
+    width = size["width"]
+    height = size["height"]
+
+    if width < 0.25:
+        width_description = "small"
+    elif width < 0.60:
+        width_description = "medium"
+    else:
+        width_description = "large"
+
+    if height < 0.25:
+        height_description = "short"
+    elif height < 0.60:
+        height_description = "medium-height"
+    else:
+        height_description = "tall"
+
+    return (
+        f"{width_description} in width "
+        f"and {height_description}"
+    )
+def create_shape_instruction(
+    shape: dict,
+) -> str:
+
+    shape_type = shape["type"]
+
+    position = describe_position(
+        shape["center"]
+    )
+
+    size = describe_size(
+        shape["size"]
+    )
+
+    aspect_ratio = shape["aspect_ratio"]
+
+    return (
+        f"Block in the {shape_type} "
+        f"{position}. "
+        f"Keep it {size}. "
+        f"Aim for an aspect ratio of "
+        f"approximately {aspect_ratio:.2f}."
+    )
 def generate_drawing_plan(
     analysis: dict,
 ) -> dict:
@@ -37,18 +104,32 @@ def generate_drawing_plan(
     )
 
     if largest_shape:
+        largest_index = largest_shape["index"]
+
+        shape_list = shapes.get(
+            "shapes",
+            [],
+        )
+
+        if largest_index < len(shape_list):
+            main_shape = shape_list[largest_index]
+
+            instruction = create_shape_instruction(
+                main_shape
+            )
+        else:
+            instruction = (
+                f"Start with the main "
+                f"{largest_shape['type']} shape."
+            )
+
         steps.append(
             {
                 "step": 2,
                 "title": "Block in the main form",
-                "instruction": (
-                    f"Start with the main "
-                    f"{largest_shape['type']} shape. "
-                    f"Use it as the primary construction form."
-                ),
+                "instruction": instruction,
             }
-        )
-
+    )
     # Step 3: Add remaining shapes
     shape_count = shapes.get(
         "shape_count",
