@@ -1,0 +1,27 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Virtual environment
+.venv/
+venv/
+
+# Environment variables
+.env
+.env.*
+
+# IDE
+.vscode/
+.idea/
+
+# macOS
+.DS_Store
+
+# Runtime data
+data/original/*
+data/processed/*
+
+# Keep directory structure
+!data/original/.gitkeep
+!data/processed/.gitkeep
