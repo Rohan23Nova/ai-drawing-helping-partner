@@ -69,6 +69,11 @@ def test_upload_image():
 
     assert "proportions" in analysis
     assert analysis["proportions"] is not None
+    assert "drawing_plan" in data
+    assert data["drawing_plan"] is not None
+
+    assert "steps" in data["drawing_plan"]
+    assert data["drawing_plan"]["step_count"] > 0
 def test_get_original_image():
     image = np.zeros(
         (100, 100, 3),
