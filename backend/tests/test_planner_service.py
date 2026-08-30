@@ -155,3 +155,28 @@ def test_get_shape_relationship_missing():
     )
 
     assert result is None
+def test_plan_step_structure():
+
+    analysis = {
+        "shapes": {
+            "shape_count": 1,
+            "shapes": [],
+        },
+        "proportions": {},
+        "lines": {
+            "line_count": 0,
+        },
+    }
+
+    result = generate_drawing_plan(
+        analysis
+    )
+
+    step = result["steps"][0]
+
+    assert "step" in step
+    assert "title" in step
+    assert "instruction" in step
+    assert "purpose" in step
+    assert "difficulty" in step
+    assert "confidence" in step

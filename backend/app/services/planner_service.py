@@ -128,14 +128,18 @@ def generate_drawing_plan(
 
     # Step 1: Establish composition
     steps.append(
-        {
-            "step": 1,
-            "title": "Establish the composition",
-            "instruction": (
+        create_plan_step(
+            step_number=1,
+            title="Establish the composition",
+            instruction=(
                 "Lightly mark the overall position "
                 "and size of the subject on the page."
             ),
-        }
+            purpose=(
+                "Create a guide for the overall "
+                "placement before adding details."
+            ),
+        )
     )
 
     # Step 2: Establish largest form
@@ -164,11 +168,16 @@ def generate_drawing_plan(
             )
 
         steps.append(
-            {
-                "step": 2,
-                "title": "Block in the main form",
-                "instruction": instruction,
-            }
+            create_plan_step(
+            step_number=2,
+            title="Block in the main form",
+            instruction=instruction,
+            purpose=(
+                "Establish the primary structure "
+                "of the drawing."
+            ),
+            confidence=0.9,
+        )
     )
     # Step 3: Add remaining shapes
     shape_count = shapes.get(
@@ -251,18 +260,40 @@ def generate_drawing_plan(
 
     # Final step
     steps.append(
-        {
-            "step": len(steps) + 1,
-            "title": "Refine the drawing",
-            "instruction": (
+        create_plan_step(
+            step_number=len(steps) + 1,
+            title="Refine the drawing",
+            instruction=(
                 "Check proportions and placement, "
                 "then gradually strengthen the "
                 "important contours and details."
             ),
-        }
+            purpose=(
+                "Correct structural mistakes before "
+                "committing to darker lines."
+            ),
+            difficulty="beginner",
+        )
     )
 
     return {
         "step_count": len(steps),
         "steps": steps,
+    }
+def create_plan_step(
+    step_number: int,
+    title: str,
+    instruction: str,
+    purpose: str,
+    difficulty: str = "beginner",
+    confidence: float = 1.0,
+) -> dict:
+
+    return {
+        "step": step_number,
+        "title": title,
+        "instruction": instruction,
+        "purpose": purpose,
+        "difficulty": difficulty,
+        "confidence": confidence,
     }
