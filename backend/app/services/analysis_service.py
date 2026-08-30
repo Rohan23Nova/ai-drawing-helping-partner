@@ -517,10 +517,7 @@ def analyze_shape_relationships(
 
     for i in range(len(shapes)):
 
-        for j in range(len(shapes)):
-
-            if i == j:
-                continue
+        for j in range(i + 1, len(shapes)):
 
             relationship = determine_spatial_relationship(
                 shapes[i],

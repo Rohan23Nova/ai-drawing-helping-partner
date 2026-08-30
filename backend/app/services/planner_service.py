@@ -65,6 +65,46 @@ def create_shape_instruction(
         f"Aim for an aspect ratio of "
         f"approximately {aspect_ratio:.2f}."
     )
+def get_shape_relationship(
+    relationships: list[dict],
+    shape_a: int,
+    shape_b: int,
+) -> str | None:
+
+    for relationship in relationships:
+        if (
+            relationship["shape_a"] == shape_a
+            and relationship["shape_b"] == shape_b
+        ):
+            return relationship["relationship"]
+
+    return None
+def create_relationship_instruction(
+    shape_a: dict,
+    shape_b: dict,
+    relationship: str,
+) -> str:
+
+    type_a = shape_a["type"]
+    type_b = shape_b["type"]
+
+    relationship_text = {
+        "above": "above",
+        "below": "below",
+        "left_of": "to the left of",
+        "right_of": "to the right of",
+    }
+
+    position = relationship_text.get(
+        relationship,
+        relationship,
+    )
+
+    return (
+        f"Keep the {type_a} {position} "
+        f"the {type_b}, matching the relative "
+        f"spacing visible in the reference."
+    )
 def generate_drawing_plan(
     analysis: dict,
 ) -> dict:
@@ -148,7 +188,43 @@ def generate_drawing_plan(
                 ),
             }
         )
+    relationships = shapes.get(
+        "relationships",
+        [],
+    )
 
+    shape_list = shapes.get(
+        "shapes",
+        [],
+    )
+
+    for relationship in relationships:
+
+        shape_a_index = relationship["shape_a"]
+        shape_b_index = relationship["shape_b"]
+
+        if (
+            shape_a_index >= len(shape_list)
+            or shape_b_index >= len(shape_list)
+        ):
+            continue
+
+        shape_a = shape_list[shape_a_index]
+        shape_b = shape_list[shape_b_index]
+
+        instruction = create_relationship_instruction(
+            shape_a,
+            shape_b,
+            relationship["relationship"],
+        )
+
+        steps.append(
+            {
+                "step": len(steps) + 1,
+                "title": "Check relative placement",
+                "instruction": instruction,
+            }
+        )
     # Step 4: Refine lines
     lines = analysis.get(
         "lines",

@@ -3,6 +3,8 @@ from backend.app.services.planner_service import (
     create_shape_instruction,
     describe_size,
     describe_position,
+    create_relationship_instruction,
+    get_shape_relationship,
 )
 
 
@@ -100,3 +102,56 @@ def test_create_shape_instruction():
     assert "rectangle" in result
     assert "near the center" in result
     assert "aspect ratio" in result
+def test_create_relationship_instruction():
+
+    shape_a = {
+        "type": "circle",
+    }
+
+    shape_b = {
+        "type": "rectangle",
+    }
+
+    result = create_relationship_instruction(
+        shape_a,
+        shape_b,
+        "above",
+    )
+
+    assert "circle" in result
+    assert "above" in result
+    assert "rectangle" in result
+def test_get_shape_relationship():
+
+    relationships = [
+        {
+            "shape_a": 0,
+            "shape_b": 1,
+            "relationship": "above",
+        }
+    ]
+
+    result = get_shape_relationship(
+        relationships,
+        0,
+        1,
+    )
+
+    assert result == "above"
+def test_get_shape_relationship_missing():
+
+    relationships = [
+        {
+            "shape_a": 0,
+            "shape_b": 1,
+            "relationship": "above",
+        }
+    ]
+
+    result = get_shape_relationship(
+        relationships,
+        1,
+        2,
+    )
+
+    assert result is None

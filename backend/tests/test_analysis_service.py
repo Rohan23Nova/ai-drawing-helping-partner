@@ -584,10 +584,10 @@ def test_analyze_shape_relationships():
         shapes
     )
 
-    assert len(relationships) == 2
+    assert len(relationships) == 1
 
     assert relationships[0]["relationship"] == "above"
-    assert relationships[1]["relationship"] == "below"
+    
 
 def test_analyze_reference():
 
