@@ -127,3 +127,213 @@ def analyze_composition(
         },
         "aspect_ratio": round(aspect_ratio, 4),
     }
+def detect_lines(
+    edges: np.ndarray,
+) -> list[dict]:
+    lines = cv2.HoughLinesP(
+        edges,
+        rho=1,
+        theta=np.pi / 180,
+        threshold=50,
+        minLineLength=50,
+        maxLineGap=10,
+    )
+
+    if lines is None:
+        return []
+
+    detected_lines = []
+
+    for line in lines:
+        x1, y1, x2, y2 = line
+
+        detected_lines.append(
+            {
+                "x1": int(x1),
+                "y1": int(y1),
+                "x2": int(x2),
+                "y2": int(y2),
+            }
+        )
+
+    return detected_lines
+def calculate_line_length(
+    line: dict,
+) -> float:
+
+    dx = line["x2"] - line["x1"]
+    dy = line["y2"] - line["y1"]
+
+    return float(
+        np.sqrt(dx ** 2 + dy ** 2)
+    )
+def classify_line_orientation(
+    line: dict,
+) -> str:
+
+    dx = line["x2"] - line["x1"]
+    dy = line["y2"] - line["y1"]
+
+    angle = np.degrees(
+        np.arctan2(dy, dx)
+    )
+
+    angle = abs(angle)
+
+    if angle > 90:
+        angle = 180 - angle
+
+    if angle < 15:
+        return "horizontal"
+
+    if angle > 75:
+        return "vertical"
+
+    return "diagonal"
+def analyze_lines(
+    edges: np.ndarray,
+    min_length: float = 50,
+) -> dict:
+
+    lines = detect_lines(edges)
+
+    valid_lines = []
+
+    for line in lines:
+        length = calculate_line_length(line)
+
+        if length < min_length:
+            continue
+
+        valid_lines.append(
+            {
+                **line,
+                "length": round(length, 2),
+            }
+        )
+
+    valid_lines = remove_duplicate_lines(
+        valid_lines
+    )
+
+    analyzed_lines = []
+
+    for line in valid_lines:
+
+        orientation = classify_line_orientation(
+            line
+        )
+
+        analyzed_lines.append(
+            {
+                **line,
+                "orientation": orientation,
+            }
+        )
+
+    horizontal_count = sum(
+        1
+        for line in analyzed_lines
+        if line["orientation"] == "horizontal"
+    )
+
+    vertical_count = sum(
+        1
+        for line in analyzed_lines
+        if line["orientation"] == "vertical"
+    )
+
+    diagonal_count = sum(
+        1
+        for line in analyzed_lines
+        if line["orientation"] == "diagonal"
+    )
+
+    return {
+        "line_count": len(analyzed_lines),
+        "orientation_counts": {
+            "horizontal": horizontal_count,
+            "vertical": vertical_count,
+            "diagonal": diagonal_count,
+        },
+        "lines": analyzed_lines,
+    }
+def calculate_line_angle(
+    line: dict,
+) -> float:
+
+    dx = line["x2"] - line["x1"]
+    dy = line["y2"] - line["y1"]
+
+    angle = np.degrees(
+        np.arctan2(dy, dx)
+    )
+
+    if angle < 0:
+        angle += 180
+
+    return float(angle)
+def calculate_line_center(
+    line: dict,
+) -> tuple[float, float]:
+
+    center_x = (
+        line["x1"] + line["x2"]
+    ) / 2
+
+    center_y = (
+        line["y1"] + line["y2"]
+    ) / 2
+
+    return center_x, center_y
+def remove_duplicate_lines(
+    lines: list[dict],
+    angle_threshold: float = 10,
+    distance_threshold: float = 20,
+) -> list[dict]:
+
+    filtered = []
+
+    for line in lines:
+
+        angle = calculate_line_angle(line)
+
+        center_x, center_y = calculate_line_center(line)
+
+        is_duplicate = False
+
+        for existing in filtered:
+
+            existing_angle = calculate_line_angle(
+                existing
+            )
+
+            existing_x, existing_y = calculate_line_center(
+                existing
+            )
+
+            angle_difference = abs(
+                angle - existing_angle
+            )
+
+            if angle_difference > 90:
+                angle_difference = (
+                    180 - angle_difference
+                )
+
+            center_distance = np.sqrt(
+                (center_x - existing_x) ** 2
+                + (center_y - existing_y) ** 2
+            )
+
+            if (
+                angle_difference <= angle_threshold
+                and center_distance <= distance_threshold
+            ):
+                is_duplicate = True
+                break
+
+        if not is_duplicate:
+            filtered.append(line)
+
+    return filtered
