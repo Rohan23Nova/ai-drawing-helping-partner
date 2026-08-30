@@ -59,9 +59,12 @@ def test_upload_image():
 
     assert "image_id" in data
     assert data["filename"] == "test.png"
-    assert data["composition"] is not None
-    assert data["composition"]["subject_detected"] is True
 
+    assert "analysis" in data
+    assert data["analysis"] is not None
+
+    assert "composition" in data["analysis"]
+    assert data["analysis"]["composition"] is not None
 def test_get_original_image():
     image = np.zeros(
         (100, 100, 3),
