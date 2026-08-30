@@ -1,7 +1,11 @@
 from pathlib import Path
-
+from fastapi.responses import FileResponse
 from backend.app.core.image_utils import generate_image_id
-from backend.app.services.storage_service import save_original_image
+from backend.app.services.storage_service import (
+    get_edge_map_path,
+    get_original_image_path,
+    save_original_image,
+)
 from fastapi import FastAPI, File, HTTPException, UploadFile
 
 from backend.app.services.image_service import (
@@ -92,3 +96,27 @@ async def upload_image(file: UploadFile = File(...)):
         "edges_detected": True,
         "message": "Image uploaded and preprocessed successfully.",
     }
+@app.get("/images/{image_id}/original")
+async def get_original_image(image_id: str):
+    image_path = get_original_image_path(image_id)
+
+    if image_path is None:
+        raise HTTPException(
+            status_code=404,
+            detail="Original image not found.",
+        )
+
+    return FileResponse(image_path)
+
+
+@app.get("/images/{image_id}/edges")
+async def get_edge_map(image_id: str):
+    edge_map_path = get_edge_map_path(image_id)
+
+    if edge_map_path is None:
+        raise HTTPException(
+            status_code=404,
+            detail="Edge map not found.",
+        )
+
+    return FileResponse(edge_map_path)
