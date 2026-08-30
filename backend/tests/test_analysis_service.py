@@ -18,6 +18,13 @@ from backend.app.services.analysis_service import (
     calculate_line_angle,
     calculate_line_center,
     remove_duplicate_lines,
+    approximate_contour,
+    calculate_circularity,
+    classify_shape,
+    analyze_shapes,
+    calculate_shape_metrics,
+    analyze_shape_relationships,
+    determine_spatial_relationship,
 )
 
 def test_find_contours():
@@ -311,3 +318,272 @@ def test_remove_duplicate_lines():
     result = remove_duplicate_lines(lines)
 
     assert len(result) == 1
+def test_approximate_contour():
+
+    image = np.zeros(
+        (200, 200),
+        dtype=np.uint8,
+    )
+
+    cv2.rectangle(
+        image,
+        (50, 50),
+        (150, 150),
+        255,
+        -1,
+    )
+
+    contours = find_contours(image)
+
+    contour = find_largest_contour(
+        contours
+    )
+
+    approximated = approximate_contour(
+        contour
+    )
+
+    assert len(approximated) == 4
+
+def test_calculate_circularity():
+
+    image = np.zeros(
+        (200, 200),
+        dtype=np.uint8,
+    )
+
+    cv2.circle(
+        image,
+        (100, 100),
+        50,
+        255,
+        -1,
+    )
+
+    contours = find_contours(image)
+
+    contour = find_largest_contour(
+        contours
+    )
+
+    circularity = calculate_circularity(
+        contour
+    )
+
+    assert circularity > 0.8
+def test_classify_triangle():
+
+    image = np.zeros(
+        (200, 200),
+        dtype=np.uint8,
+    )
+
+    points = np.array(
+        [
+            [100, 30],
+            [30, 170],
+            [170, 170],
+        ],
+        dtype=np.int32,
+    )
+
+    cv2.fillPoly(
+        image,
+        [points],
+        255,
+    )
+
+    contours = find_contours(image)
+
+    contour = find_largest_contour(
+        contours
+    )
+
+    assert classify_shape(contour) == "triangle"
+
+def test_classify_rectangle():
+
+    image = np.zeros(
+        (200, 200),
+        dtype=np.uint8,
+    )
+
+    cv2.rectangle(
+        image,
+        (40, 60),
+        (160, 140),
+        255,
+        -1,
+    )
+
+    contours = find_contours(image)
+
+    contour = find_largest_contour(
+        contours
+    )
+
+    assert classify_shape(contour) == "quadrilateral"
+def test_analyze_shapes():
+
+    image = np.zeros(
+        (200, 200),
+        dtype=np.uint8,
+    )
+
+    cv2.rectangle(
+        image,
+        (40, 40),
+        (160, 160),
+        255,
+        -1,
+    )
+
+    result = analyze_shapes(image)
+
+    assert result["shape_count"] >= 1
+    assert result["shapes"][0]["type"] == "quadrilateral"
+
+def test_calculate_shape_metrics():
+
+    image = np.zeros(
+        (200, 300),
+        dtype=np.uint8,
+    )
+
+    cv2.rectangle(
+        image,
+        (50, 40),
+        (150, 140),
+        255,
+        -1,
+    )
+
+    contours = find_contours(image)
+
+    contour = find_largest_contour(
+        contours
+    )
+
+    metrics = calculate_shape_metrics(
+        contour,
+        300,
+        200,
+    )
+
+    assert 0 <= metrics["center"]["x"] <= 1
+    assert 0 <= metrics["center"]["y"] <= 1
+
+    assert metrics["size"]["width"] > 0
+    assert metrics["size"]["height"] > 0
+
+    assert metrics["aspect_ratio"] > 0
+
+def test_calculate_shape_metrics_position():
+
+    image = np.zeros(
+        (200, 300),
+        dtype=np.uint8,
+    )
+
+    cv2.rectangle(
+        image,
+        (50, 40),
+        (150, 140),
+        255,
+        -1,
+    )
+
+    contours = find_contours(image)
+
+    contour = find_largest_contour(
+        contours
+    )
+
+    metrics = calculate_shape_metrics(
+        contour,
+        300,
+        200,
+    )
+
+    assert abs(
+        metrics["center"]["x"] - 0.333
+    ) < 0.02
+
+    assert abs(
+        metrics["center"]["y"] - 0.45
+    ) < 0.02
+
+def test_determine_spatial_relationship():
+
+    shape_a = {
+        "center": {
+            "x": 0.5,
+            "y": 0.3,
+        }
+    }
+
+    shape_b = {
+        "center": {
+            "x": 0.5,
+            "y": 0.7,
+        }
+    }
+
+    assert (
+        determine_spatial_relationship(
+            shape_a,
+            shape_b,
+        )
+        == "above"
+    )
+
+def test_determine_horizontal_relationship():
+
+    shape_a = {
+        "center": {
+            "x": 0.2,
+            "y": 0.5,
+        }
+    }
+
+    shape_b = {
+        "center": {
+            "x": 0.7,
+            "y": 0.5,
+        }
+    }
+
+    assert (
+        determine_spatial_relationship(
+            shape_a,
+            shape_b,
+        )
+        == "left_of"
+    )
+
+def test_analyze_shape_relationships():
+
+    shapes = [
+        {
+            "center": {
+                "x": 0.5,
+                "y": 0.2,
+            }
+        },
+        {
+            "center": {
+                "x": 0.5,
+                "y": 0.7,
+            }
+        },
+    ]
+
+    relationships = analyze_shape_relationships(
+        shapes
+    )
+
+    assert len(relationships) == 2
+
+    assert relationships[0]["relationship"] == "above"
+    assert relationships[1]["relationship"] == "below"
+        

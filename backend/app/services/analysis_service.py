@@ -63,6 +63,15 @@ def get_position_label(
         return "center"
 
     return f"{vertical}-{horizontal}"
+def analyze_image(
+    edges: np.ndarray,
+) -> dict:
+
+    return {
+        "composition": analyze_composition(edges),
+        "lines": analyze_lines(edges),
+        "shapes": analyze_shapes(edges),
+    }
 def analyze_composition(
     edges: np.ndarray,
 ) -> dict:
@@ -337,3 +346,193 @@ def remove_duplicate_lines(
             filtered.append(line)
 
     return filtered
+def approximate_contour(
+    contour: np.ndarray,
+    epsilon_ratio: float = 0.02,
+) -> np.ndarray:
+
+    perimeter = cv2.arcLength(
+        contour,
+        True,
+    )
+
+    epsilon = epsilon_ratio * perimeter
+
+    return cv2.approxPolyDP(
+        contour,
+        epsilon,
+        True,
+    )
+def classify_shape(
+    contour: np.ndarray,
+) -> str:
+
+    circularity = calculate_circularity(
+        contour
+    )
+
+    if circularity > 0.80:
+        return "circle"
+
+    approximated = approximate_contour(
+        contour
+    )
+
+    vertices = len(approximated)
+
+    if vertices == 3:
+        return "triangle"
+
+    if vertices == 4:
+        return "quadrilateral"
+
+    if vertices == 5:
+        return "pentagon"
+
+    if vertices == 6:
+        return "hexagon"
+
+    return "polygon"
+def calculate_circularity(
+    contour: np.ndarray,
+) -> float:
+
+    area = cv2.contourArea(contour)
+
+    perimeter = cv2.arcLength(
+        contour,
+        True,
+    )
+
+    if perimeter == 0:
+        return 0.0
+
+    circularity = (
+        4 * np.pi * area
+        / (perimeter ** 2)
+    )
+
+    return float(circularity)
+def analyze_shapes(
+    edges: np.ndarray,
+    min_area: float = 100,
+) -> dict:
+
+    contours = find_contours(edges)
+
+    image_height, image_width = edges.shape[:2]
+
+    shapes = []
+
+    for contour in contours:
+
+        area = cv2.contourArea(contour)
+
+        if area < min_area:
+            continue
+
+        shape_type = classify_shape(contour)
+
+        bounding_box = get_bounding_box(contour)
+
+        metrics = calculate_shape_metrics(
+            contour,
+            image_width,
+            image_height,
+        )
+
+        shapes.append(
+            {
+                "type": shape_type,
+                "area": round(float(area), 2),
+                "bounding_box": bounding_box,
+                **metrics,
+            }
+        )
+    relationships = analyze_shape_relationships(
+        shapes
+    )
+
+    return {
+        "shape_count": len(shapes),
+        "shapes": shapes,
+        "relationships": relationships,
+    }
+def calculate_shape_metrics(
+    contour: np.ndarray,
+    image_width: int,
+    image_height: int,
+) -> dict:
+
+    x, y, width, height = cv2.boundingRect(contour)
+
+    center_x = x + width / 2
+    center_y = y + height / 2
+
+    normalized_center_x = center_x / image_width
+    normalized_center_y = center_y / image_height
+
+    normalized_width = width / image_width
+    normalized_height = height / image_height
+
+    aspect_ratio = width / height if height != 0 else 0
+
+    return {
+        "center": {
+            "x": round(float(normalized_center_x), 4),
+            "y": round(float(normalized_center_y), 4),
+        },
+        "size": {
+            "width": round(float(normalized_width), 4),
+            "height": round(float(normalized_height), 4),
+        },
+        "aspect_ratio": round(float(aspect_ratio), 4),
+    }
+def determine_spatial_relationship(
+    shape_a: dict,
+    shape_b: dict,
+) -> str:
+
+    ax = shape_a["center"]["x"]
+    ay = shape_a["center"]["y"]
+
+    bx = shape_b["center"]["x"]
+    by = shape_b["center"]["y"]
+
+    if abs(ax - bx) > abs(ay - by):
+        if ax < bx:
+            return "left_of"
+        else:
+            return "right_of"
+
+    if ay < by:
+        return "above"
+
+    return "below"
+def analyze_shape_relationships(
+    shapes: list[dict],
+) -> list[dict]:
+
+    relationships = []
+
+    for i in range(len(shapes)):
+
+        for j in range(len(shapes)):
+
+            if i == j:
+                continue
+
+            relationship = determine_spatial_relationship(
+                shapes[i],
+                shapes[j],
+            )
+
+            relationships.append(
+                {
+                    "shape_a": i,
+                    "shape_b": j,
+                    "relationship": relationship,
+                }
+            )
+
+    return relationships
