@@ -17,7 +17,9 @@ from backend.app.services.preprocessing_service import (
     preprocess_image,
     save_edge_map,
 )
-
+from backend.app.services.analysis_service import (
+    analyze_composition,
+)
 app = FastAPI(
     title="AI Drawing Helping Partner",
     description="An AI-powered drawing assistance API.",
@@ -74,6 +76,9 @@ async def upload_image(file: UploadFile = File(...)):
     )
 
     processed = preprocess_image(image)
+    composition = analyze_composition(
+        processed["edges"]
+    )
 
     edge_map_path = save_edge_map(
         processed["edges"],
@@ -95,6 +100,7 @@ async def upload_image(file: UploadFile = File(...)):
         "blurred": True,
         "edges_detected": True,
         "message": "Image uploaded and preprocessed successfully.",
+        "composition": composition,
     }
 @app.get("/images/{image_id}/original")
 async def get_original_image(image_id: str):

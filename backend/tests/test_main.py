@@ -1,3 +1,5 @@
+import cv2
+import numpy as np
 from fastapi.testclient import TestClient
 
 from backend.app.main import app
@@ -18,3 +20,136 @@ def test_health_check():
 
     assert response.status_code == 200
     assert response.json()["status"] == "healthy"
+
+def test_upload_image():
+    image = np.zeros(
+        (200, 200, 3),
+        dtype=np.uint8,
+    )
+
+    cv2.rectangle(
+        image,
+        (50, 50),
+        (150, 150),
+        (255, 255, 255),
+        -1,
+    )
+
+    success, encoded_image = cv2.imencode(
+        ".png",
+        image,
+    )
+
+    assert success
+
+    response = client.post(
+        "/upload",
+        files={
+            "file": (
+                "test.png",
+                encoded_image.tobytes(),
+                "image/png",
+            )
+        },
+    )
+
+    assert response.status_code == 200
+
+    data = response.json()
+
+    assert "image_id" in data
+    assert data["filename"] == "test.png"
+    assert data["composition"] is not None
+    assert data["composition"]["subject_detected"] is True
+
+def test_get_original_image():
+    image = np.zeros(
+        (100, 100, 3),
+        dtype=np.uint8,
+    )
+
+    success, encoded_image = cv2.imencode(
+        ".png",
+        image,
+    )
+
+    assert success
+
+    upload_response = client.post(
+        "/upload",
+        files={
+            "file": (
+                "test.png",
+                encoded_image.tobytes(),
+                "image/png",
+            )
+        },
+    )
+
+    assert upload_response.status_code == 200
+
+    image_id = upload_response.json()["image_id"]
+
+    response = client.get(
+        f"/images/{image_id}/original"
+    )
+
+    assert response.status_code == 200
+    assert response.headers["content-type"] == "image/png"
+
+def test_get_edge_map():
+    image = np.zeros(
+        (100, 100, 3),
+        dtype=np.uint8,
+    )
+
+    cv2.rectangle(
+        image,
+        (20, 20),
+        (80, 80),
+        (255, 255, 255),
+        -1,
+    )
+
+    success, encoded_image = cv2.imencode(
+        ".png",
+        image,
+    )
+
+    assert success
+
+    upload_response = client.post(
+        "/upload",
+        files={
+            "file": (
+                "test.png",
+                encoded_image.tobytes(),
+                "image/png",
+            )
+        },
+    )
+
+    assert upload_response.status_code == 200
+
+    image_id = upload_response.json()["image_id"]
+
+    response = client.get(
+        f"/images/{image_id}/edges"
+    )
+
+    assert response.status_code == 200
+    assert response.headers["content-type"] == "image/png"
+
+def test_get_missing_original_image():
+    response = client.get(
+        "/images/does-not-exist/original"
+    )
+
+    assert response.status_code == 404
+
+def test_get_missing_edge_map():
+    response = client.get(
+        "/images/does-not-exist/edges"
+    )
+
+    assert response.status_code == 404
