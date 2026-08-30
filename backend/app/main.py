@@ -5,6 +5,9 @@ from backend.app.services.image_service import (
     validate_image_extension,
 )
 
+from backend.app.services.preprocessing_service import (
+    preprocess_image,
+)
 
 app = FastAPI(
     title="AI Drawing Helping Partner",
@@ -52,11 +55,18 @@ async def upload_image(file: UploadFile = File(...)):
             detail=str(error),
         )
 
-    height, width = image.shape[:2]
+    processed = preprocess_image(image)
+
+    height, width = processed["resized"].shape[:2]
 
     return {
         "filename": file.filename,
-        "width": width,
-        "height": height,
-        "message": "Image uploaded and successfully read.",
+        "original_width": image.shape[1],
+        "original_height": image.shape[0],
+        "processed_width": width,
+        "processed_height": height,
+        "grayscale": True,
+        "blurred": True,
+        "edges_detected": True,
+        "message": "Image uploaded and preprocessed successfully.",
     }
