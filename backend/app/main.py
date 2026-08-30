@@ -1,3 +1,7 @@
+from pathlib import Path
+
+from backend.app.core.image_utils import generate_image_id
+from backend.app.services.storage_service import save_original_image
 from fastapi import FastAPI, File, HTTPException, UploadFile
 
 from backend.app.services.image_service import (
@@ -55,25 +59,36 @@ async def upload_image(file: UploadFile = File(...)):
             status_code=400,
             detail=str(error),
         )
+    image_id = generate_image_id()
+
+    extension = Path(file.filename).suffix.lower()
+
+    original_path = save_original_image(
+        image_bytes,
+        image_id,
+        extension,
+    )
 
     processed = preprocess_image(image)
 
     edge_map_path = save_edge_map(
         processed["edges"],
-        "data/processed/edge_map.png",
+        f"data/processed/{image_id}_edges.png",
     )
 
     height, width = processed["resized"].shape[:2]
 
     return {
+        "image_id": image_id,
         "filename": file.filename,
         "original_width": image.shape[1],
         "original_height": image.shape[0],
         "processed_width": width,
         "processed_height": height,
+        "original_path": original_path,
+        "edge_map_path": edge_map_path,
         "grayscale": True,
         "blurred": True,
         "edges_detected": True,
-        "edge_map_path": edge_map_path,
         "message": "Image uploaded and preprocessed successfully.",
     }
