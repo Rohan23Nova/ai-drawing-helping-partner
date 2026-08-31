@@ -26,6 +26,21 @@ from backend.app.services.planner_service import (
 from backend.app.schemas.planner_schema import (
     DrawingPlan,
 )
+from backend.app.services.guidance_service import (
+    generate_guidance,
+)
+from backend.app.schemas.chat_schema import (
+    ChatRequest,
+    ChatResponse,
+)
+from backend.app.services.chat_service import (
+    generate_chat_response,
+)
+from backend.app.services.session_service import (
+    get_session,
+    save_session,
+)
+from fastapi import FastAPI, File, HTTPException, UploadFile
 app = FastAPI(
     title="AI Drawing Helping Partner",
     description="An AI-powered drawing assistance API.",
@@ -92,6 +107,14 @@ async def upload_image(file: UploadFile = File(...)):
     drawing_plan = DrawingPlan.model_validate(
         drawing_plan_data
     )
+    save_session(
+        image_id,
+        analysis,
+        drawing_plan.model_dump(),
+    )
+    guidance = generate_guidance(
+        drawing_plan.model_dump()
+    )
 
     edge_map_path = save_edge_map(
         processed["edges"],
@@ -115,7 +138,35 @@ async def upload_image(file: UploadFile = File(...)):
         "message": "Image uploaded and preprocessed successfully.",
         "analysis": analysis,
         "drawing_plan": drawing_plan,
+        "guidance": guidance,
     }
+@app.post(
+    "/chat",
+    response_model=ChatResponse,
+)
+async def chat(request: ChatRequest):
+
+    session = get_session(
+        request.image_id
+    )
+
+    if session is None:
+        raise HTTPException(
+            status_code=404,
+            detail="Image session not found.",
+        )
+
+    response = generate_chat_response(
+        request.message,
+        session["analysis"],
+        session["drawing_plan"],
+    )
+
+    return ChatResponse(
+        image_id=request.image_id,
+        message=request.message,
+        response=response,
+    )
 @app.get("/images/{image_id}/original")
 async def get_original_image(image_id: str):
     image_path = get_original_image_path(image_id)
