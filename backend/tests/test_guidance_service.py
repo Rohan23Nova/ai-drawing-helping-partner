@@ -81,3 +81,51 @@ def test_generate_guidance():
     assert result["steps"][0]["purpose"] == (
         "Establish placement."
     )
+def test_guidance_preserves_step_information():
+
+    plan = {
+        "steps": [
+            {
+                "step": 1,
+                "title": "Establish the composition",
+                "category": "placement",
+                "instruction": "Place the subject lightly.",
+                "purpose": "Establish overall placement.",
+                "difficulty": "beginner",
+                "confidence": 0.90,
+                "confidence_level": "high",
+            }
+        ]
+    }
+
+    result = generate_guidance(plan)
+
+    step = result["steps"][0]
+
+    assert step["step"] == 1
+    assert step["category"] == "placement"
+    assert step["difficulty"] == "beginner"
+    assert step["confidence"] == 0.90
+    assert step["confidence_level"] == "high"
+def test_guidance_contains_category_advice():
+
+    plan = {
+        "steps": [
+            {
+                "step": 1,
+                "title": "Establish the composition",
+                "category": "placement",
+                "instruction": "Place the subject lightly.",
+                "purpose": "Establish overall placement.",
+                "difficulty": "beginner",
+                "confidence": 0.90,
+                "confidence_level": "high",
+            }
+        ]
+    }
+
+    result = generate_guidance(plan)
+
+    guidance = result["steps"][0]["guidance"]
+
+    assert guidance == "Place the subject lightly."
