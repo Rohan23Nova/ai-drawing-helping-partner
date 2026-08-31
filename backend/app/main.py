@@ -1,3 +1,6 @@
+from dotenv import load_dotenv
+
+load_dotenv()
 from pathlib import Path
 from fastapi.responses import FileResponse
 from backend.app.core.image_utils import generate_image_id
@@ -39,6 +42,8 @@ from backend.app.services.chat_service import (
 from backend.app.services.session_service import (
     get_session,
     save_session,
+    add_message,
+    get_current_step,
 )
 from fastapi import FastAPI, File, HTTPException, UploadFile
 app = FastAPI(
@@ -156,10 +161,25 @@ async def chat(request: ChatRequest):
             detail="Image session not found.",
         )
 
+    add_message(
+        request.image_id,
+        "user",
+        request.message,
+    )
+
     response = generate_chat_response(
         request.message,
         session["analysis"],
         session["drawing_plan"],
+        session["conversation"],
+        session["current_step"],
+    )
+    
+
+    add_message(
+        request.image_id,
+        "assistant",
+        response,
     )
 
     return ChatResponse(
@@ -167,6 +187,47 @@ async def chat(request: ChatRequest):
         message=request.message,
         response=response,
     )
+@app.post("/chat/{image_id}/progress/{step}")
+async def update_progress(
+    image_id: str,
+    step: int,
+):
+
+    session = get_session(image_id)
+
+    if session is None:
+        raise HTTPException(
+            status_code=404,
+            detail="Image session not found.",
+        )
+
+    step_count = len(
+        session["drawing_plan"].get(
+            "steps",
+            [],
+        )
+    )
+
+    if step < 1 or step > step_count:
+        raise HTTPException(
+            status_code=400,
+            detail="Invalid drawing step.",
+        )
+
+    from backend.app.services.session_service import (
+        set_current_step,
+    )
+
+    set_current_step(
+        image_id,
+        step,
+    )
+
+    return {
+        "image_id": image_id,
+        "current_step": step,
+        "message": "Drawing progress updated.",
+    }
 @app.get("/images/{image_id}/original")
 async def get_original_image(image_id: str):
     image_path = get_original_image_path(image_id)

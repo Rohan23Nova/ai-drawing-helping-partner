@@ -220,3 +220,39 @@ def test_get_step_category():
         )
         == "refinement"
     )
+def test_describe_confidence():
+
+    assert describe_confidence(0.95) == "high"
+    assert describe_confidence(0.75) == "medium"
+    assert describe_confidence(0.40) == "low"
+def test_adjust_instruction_high_confidence():
+
+    instruction = "Draw the main rectangle."
+
+    result = adjust_instruction_for_confidence(
+        instruction,
+        0.95,
+    )
+
+    assert result == instruction
+def test_adjust_instruction_medium_confidence():
+
+    instruction = "Draw the main rectangle."
+
+    result = adjust_instruction_for_confidence(
+        instruction,
+        0.70,
+    )
+
+    assert "Use this as a guide" in result
+def test_adjust_instruction_low_confidence():
+
+    instruction = "Draw the main rectangle."
+
+    result = adjust_instruction_for_confidence(
+        instruction,
+        0.40,
+    )
+
+    assert "uncertain" in result
+    assert "verify" in result

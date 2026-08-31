@@ -71,3 +71,52 @@ def test_chat_response_lines():
 
     assert "6" in result
     assert "lines" in result.lower()
+def test_chat_uses_conversation_history():
+
+    analysis = {}
+
+    drawing_plan = {
+        "steps": [
+            {
+                "step": 1,
+                "title": "Establish the composition",
+                "instruction": "Mark the subject position.",
+            },
+            {
+                "step": 2,
+                "title": "Block in the main form",
+                "instruction": "Lightly draw the main form.",
+            },
+        ]
+    }
+
+    conversation = [
+        {
+            "role": "user",
+            "content": "What should I do first?",
+        },
+        {
+            "role": "assistant",
+            "content": "Start with the composition.",
+        },
+    ]
+
+    result = generate_chat_response(
+        "What's next?",
+        analysis,
+        drawing_plan,
+        conversation,
+    )
+
+    assert "Block in the main form" in result
+def test_chat_finished_response():
+
+    result = generate_chat_response(
+        "I am done with this step.",
+        {},
+        {"steps": []},
+        [],
+    )
+
+    assert "reference" in result.lower()
+    assert "proportions" in result.lower()
