@@ -46,6 +46,9 @@ from backend.app.services.session_service import (
     get_current_step,
 )
 from fastapi import FastAPI, File, HTTPException, UploadFile
+from backend.app.services.vision_service import (
+    analyze_image_with_vision,
+)
 app = FastAPI(
     title="AI Drawing Helping Partner",
     description="An AI-powered drawing assistance API.",
@@ -105,8 +108,13 @@ async def upload_image(file: UploadFile = File(...)):
     analysis = analyze_reference(
         processed["edges"]
     )
+    vision = analyze_image_with_vision(
+        original_path
+    )
+
     drawing_plan_data = generate_drawing_plan(
-        analysis
+        analysis,
+        vision,
     )
 
     drawing_plan = DrawingPlan.model_validate(

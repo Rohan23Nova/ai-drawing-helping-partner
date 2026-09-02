@@ -128,8 +128,21 @@ def create_relationship_instruction(
     )
 def generate_drawing_plan(
     analysis: dict,
+    vision: dict | None = None,
 ) -> dict:
+    """
+    Generate a beginner-friendly drawing plan.
 
+    If semantic vision information is available, use it
+    to create meaningful drawing stages.
+
+    Otherwise, fall back to the existing OpenCV-based plan.
+    """
+
+    if vision:
+        return generate_semantic_drawing_plan(vision)
+
+    # Existing OpenCV-based planner
     steps = []
 
     composition = analysis.get(
@@ -213,7 +226,8 @@ def generate_drawing_plan(
                 confidence=confidence,
             )
         )
-    # Step 3: Add remaining shapes
+
+    # Step 3: Remaining shapes
     shape_count = shapes.get(
         "shape_count",
         0,
@@ -222,7 +236,7 @@ def generate_drawing_plan(
     if shape_count > 1:
         steps.append(
             create_plan_step(
-                step_number=3,
+                step_number=len(steps) + 1,
                 title="Refine the main forms",
                 instruction=(
                     "Check the major shapes and refine "
@@ -237,6 +251,8 @@ def generate_drawing_plan(
                 confidence=0.75,
             )
         )
+
+    # Relationships
     relationships = shapes.get(
         "relationships",
         [],
@@ -280,7 +296,8 @@ def generate_drawing_plan(
                 difficulty="beginner",
             )
         )
-    # Step 4: Refine lines
+
+    # Lines
     lines = analysis.get(
         "lines",
         {},
@@ -325,6 +342,153 @@ def generate_drawing_plan(
                 "committing to darker lines."
             ),
             difficulty="beginner",
+        )
+    )
+
+    return {
+        "step_count": len(steps),
+        "steps": steps,
+    }
+def generate_semantic_drawing_plan(
+    vision: dict,
+) -> dict:
+    """
+    Convert semantic visual understanding into
+    a beginner-friendly construction sequence.
+    """
+
+    steps = []
+
+    subject = vision.get(
+        "subject",
+        "subject",
+    )
+
+    main_form = vision.get(
+        "main_form",
+        {},
+    )
+
+    components = vision.get(
+        "components",
+        [],
+    )
+
+    construction_order = vision.get(
+        "construction_order",
+        [],
+    )
+
+    # Step 1: Composition
+    steps.append(
+        create_plan_step(
+            step_number=1,
+            title="Establish the composition",
+            instruction=(
+                f"Lightly mark the overall position "
+                f"and size of the {subject} on the page."
+            ),
+            purpose=(
+                "Establish the overall placement before "
+                "adding internal details."
+            ),
+            confidence=0.85,
+        )
+    )
+
+    # Step 2: Main silhouette
+    if main_form:
+        form_type = main_form.get(
+            "type",
+            "main form",
+        )
+
+        position = main_form.get(
+            "position",
+            "center",
+        )
+
+        steps.append(
+            create_plan_step(
+                step_number=2,
+                title="Block in the main form",
+                instruction=(
+                    f"Lightly draw the main {form_type} "
+                    f"in the {position}. Focus on its "
+                    "overall width, height, and silhouette."
+                ),
+                purpose=(
+                    "Build the primary structure of the "
+                    "subject before adding smaller forms."
+                ),
+                confidence=0.85,
+            )
+        )
+
+    # Step 3+: Components
+    for component in components:
+
+        name = component.get(
+            "name",
+            "secondary form",
+        )
+
+        form = component.get(
+            "form",
+            "simple shape",
+        )
+
+        position = component.get(
+            "position",
+            "appropriate position",
+        )
+
+        importance = component.get(
+            "importance",
+            "medium",
+        )
+
+        confidence = (
+            0.85
+            if importance == "high"
+            else 0.75
+        )
+
+        steps.append(
+            create_plan_step(
+                step_number=len(steps) + 1,
+                title=f"Add the {name}",
+                instruction=(
+                    f"Lightly place the {form} "
+                    f"{name} in the {position}. "
+                    "Check its size and spacing against "
+                    "the main form before refining it."
+                ),
+                purpose=(
+                    f"Establish the position and proportion "
+                    f"of the {name} relative to the subject."
+                ),
+                confidence=confidence,
+                difficulty="beginner",
+            )
+        )
+
+    # Final structural step
+    steps.append(
+        create_plan_step(
+            step_number=len(steps) + 1,
+            title="Refine the drawing",
+            instruction=(
+                "Compare the complete construction with "
+                "the reference. Correct proportions and "
+                "placement before strengthening important "
+                "contours and details."
+            ),
+            purpose=(
+                "Correct structural errors before moving "
+                "toward darker lines and shading."
+            ),
+            confidence=0.85,
         )
     )
 
